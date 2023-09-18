@@ -1,17 +1,21 @@
 "use client";
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
-import { fetchFile, toBlobURL } from "@ffmpeg/util";
+import { toBlobURL } from "@ffmpeg/util";
 
 const VideoTrimmer: React.FC = () => {
   const [loaded, setLoaded] = useState(false);
   const [videoDuration, setVideoDuration] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
   const [start, setStart] = useState<number>(0);
-  const [end, setEnd] = useState<number>(0);
+  const [end, setEnd] = useState<number>(1);
   const ffmpegRef = useRef(new FFmpeg());
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const messageRef = useRef<HTMLParagraphElement | null>(null);
+	const messageRef = useRef<HTMLParagraphElement | null>(null);
+	
+	useEffect(() => {
+		setEnd(2);
+	}, []);
 
   const load = async () => {
     setIsLoading(true);
@@ -72,9 +76,10 @@ const VideoTrimmer: React.FC = () => {
         src="/videos/sample.mp4"
         controls
         onLoadedMetadata={(e) => setVideoDuration(e.currentTarget.duration)}
-      ></video>
+			></video>
+			<p>End time has to be bigger than Start time</p>
       <br />
-      <label>Start: </label>
+      <label>Start time: </label>
       <input
         type="range"
         min="0"
@@ -83,10 +88,10 @@ const VideoTrimmer: React.FC = () => {
         onChange={(e) => handleStartChange(Number(e.target.value))}
       />
       <br />
-      <label>End: </label>
+      <label>End time: </label>
       <input
         type="range"
-        min="0"
+        min="1"
         max={videoDuration.toString()}
         value={end.toString()}
         onChange={(e) => handleEndChange(Number(e.target.value))}
