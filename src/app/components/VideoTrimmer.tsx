@@ -57,7 +57,7 @@ const VideoTrimmer: React.FC = () => {
 			
 			// Leer el video recortado y actualizar el elemento de video
 			// debugger;
-      const trimmedData = await ffmpeg.readFile("output.mp4");
+      const trimmedData = await ffmpeg.readFile("output.mp4") as any;
 			// debugger;
 			console.log("good 4");
 			
