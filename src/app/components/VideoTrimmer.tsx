@@ -5,6 +5,7 @@ import { fetchFile, toBlobURL } from "@ffmpeg/util";
 
 const VideoTrimmer: React.FC = () => {
   const [loaded, setLoaded] = useState(false);
+  const [videoDuration, setVideoDuration] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
   const [start, setStart] = useState<number>(0);
   const [end, setEnd] = useState<number>(0);
@@ -30,72 +31,72 @@ const VideoTrimmer: React.FC = () => {
     setIsLoading(false);
   };
 
-  const trimVideo = async () => {
-    try {
-      const ffmpeg = ffmpegRef.current;
+  const handleStartChange = (value: number) => {
+    if (value < end) {
+      setStart(value);
+    }
+  };
 
-      // Escribir el archivo de video en el sistema de archivos virtual
-      const videoData = await fetch("/videos/sample.mp4").then((response) =>
-        response.arrayBuffer()
-			);
-			// console.log("good 1");
-      await ffmpeg.writeFile("input.mp4", new Uint8Array(videoData));
-			// console.log("good 2");
-			
-      // Ejecutar el comando de recorte
-      await ffmpeg.exec([
-        "-i",
-        "input.mp4",
-        "-ss",
-        String(start),
-        "-to",
-        String(end),
-        "output.mp4",
-			]);
-			// await ffmpeg.exec(["-i", "video.avi", "video.mp4"]);
-			// console.log("good 3");
-			
-			// Leer el video recortado y actualizar el elemento de video
-			// debugger;
-      const trimmedData = await ffmpeg.readFile("output.mp4") as any;
-			// debugger;
-			console.log("good 4");
-			
-      const blob = new Blob([trimmedData.buffer], { type: "video/mp4" });
-      if (videoRef.current) {
-				videoRef.current.src = URL.createObjectURL(blob);
-      }
-			console.log("good 5");
-    } catch (error) {
-			console.error("Error al recortar el video:", error);
-			console.log(JSON.stringify(error));
+  const handleEndChange = (value: number) => {
+    if (value > start) {
+      setEnd(value);
+    }
+  };
+
+  const trimVideo = async () => {
+    const ffmpeg = ffmpegRef.current;
+    const videoData = await fetch("/videos/sample.mp4").then((response) =>
+      response.arrayBuffer()
+    );
+    await ffmpeg.writeFile("input.mp4", new Uint8Array(videoData));
+    await ffmpeg.exec([
+      "-i",
+      "input.mp4",
+      "-ss",
+      String(start),
+      "-to",
+      String(end),
+      "output.mp4",
+    ]);
+    const trimmedData = (await ffmpeg.readFile("output.mp4")) as any;
+    const blob = new Blob([trimmedData.buffer], { type: "video/mp4" });
+    if (videoRef.current) {
+      videoRef.current.src = URL.createObjectURL(blob);
     }
   };
 
   return loaded ? (
     <div className="fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%]">
-      <video ref={videoRef} src="/videos/sample.mp4" controls></video>
+      <video
+        ref={videoRef}
+        src="/videos/sample.mp4"
+        controls
+        onLoadedMetadata={(e) => setVideoDuration(e.currentTarget.duration)}
+      ></video>
       <br />
+      <label>Start: </label>
       <input
         type="range"
         min="0"
-        max={videoRef.current?.duration?.toString() || "0"}
+        max={videoDuration.toString()}
         value={start.toString()}
-        onChange={(e) => setStart(Number(e.target.value))}
+        onChange={(e) => handleStartChange(Number(e.target.value))}
       />
+      <br />
+      <label>End: </label>
       <input
         type="range"
         min="0"
-        max={videoRef.current?.duration?.toString() || "0"}
+        max={videoDuration.toString()}
         value={end.toString()}
-        onChange={(e) => setEnd(Number(e.target.value))}
+        onChange={(e) => handleEndChange(Number(e.target.value))}
       />
       <br />
       <button
         onClick={trimVideo}
         className="bg-green-500 hover:bg-green-700 text-white py-3 px-6 rounded"
       >
-        Recortar Video
+        Trim Video
       </button>
       <p ref={messageRef}></p>
     </div>
@@ -104,7 +105,7 @@ const VideoTrimmer: React.FC = () => {
       className="fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] flex items-center bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded"
       onClick={load}
     >
-      Cargar ffmpeg-core
+      Load ffmpeg-core
       {isLoading && (
         <span className="animate-spin ml-3">
           <svg
